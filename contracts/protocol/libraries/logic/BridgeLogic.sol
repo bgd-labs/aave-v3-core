@@ -25,7 +25,6 @@ library BridgeLogic {
   using GPv2SafeERC20 for IERC20;
 
   // See `IPool` for descriptions
-  event ReserveUsedAsCollateralEnabled(address indexed reserve, address indexed user);
   event MintUnbacked(
     address indexed reserve,
     address user,
@@ -65,12 +64,14 @@ library BridgeLogic {
 
     ValidationLogic.validateSupply(reserveCache, amount);
 
-    uint256 unbackedMintCap = reserveCache.reserveConfiguration.getUnbackedMintCap();
-    uint256 reserveDecimals = reserveCache.reserveConfiguration.getDecimals();
-
     uint256 unbacked = reserve.unbacked += amount.toUint128();
 
-    require(unbacked <= unbackedMintCap * (10**reserveDecimals), Errors.UNBACKED_MINT_CAP_EXCEEDED);
+    require(
+      unbacked <=
+        reserveCache.reserveConfiguration.getUnbackedMintCap() *
+          (10**reserveCache.reserveConfiguration.getDecimals()),
+      Errors.UNBACKED_MINT_CAP_EXCEEDED
+    );
 
     reserve.updateInterestRates(reserveCache, asset, 0, 0);
 
@@ -82,17 +83,14 @@ library BridgeLogic {
     );
 
     if (isFirstSupply) {
-      if (
-        ValidationLogic.validateUseAsCollateral(
-          reservesData,
-          reservesList,
-          userConfig,
-          reserveCache.reserveConfiguration
-        )
-      ) {
-        userConfig.setUsingAsCollateral(reserve.id, true);
-        emit ReserveUsedAsCollateralEnabled(asset, onBehalfOf);
-      }
+      userConfig.enableUsingAsCollateral(
+        reservesData,
+        reservesList,
+        reserveCache.reserveConfiguration,
+        reserve.id,
+        asset,
+        onBehalfOf
+      );
     }
 
     emit MintUnbacked(asset, msg.sender, onBehalfOf, amount, referralCode);

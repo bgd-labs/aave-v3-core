@@ -698,29 +698,4 @@ library ValidationLogic {
       }
     }
   }
-
-  /**
-   * @notice Validates if an asset can be activated as collateral in the following actions: supply, transfer,
-   * set as collateral, mint unbacked, and liquidate
-   * @dev This is used to ensure that the constraints for isolated assets are respected by all the actions that
-   * generate transfers of aTokens
-   * @param reservesData The state of all the reserves
-   * @param reservesList The addresses of all the active reserves
-   * @param userConfig the user configuration
-   * @param reserveConfig The reserve configuration
-   * @return True if the asset can be activated as collateral, false otherwise
-   **/
-  function validateUseAsCollateral(
-    mapping(address => DataTypes.ReserveData) storage reservesData,
-    mapping(uint256 => address) storage reservesList,
-    DataTypes.UserConfigurationMap storage userConfig,
-    DataTypes.ReserveConfigurationMap memory reserveConfig
-  ) internal view returns (bool) {
-    if (!userConfig.isUsingAsCollateralAny()) {
-      return true;
-    }
-    (bool isolationModeActive, , ) = userConfig.getIsolationModeState(reservesData, reservesList);
-
-    return (!isolationModeActive && reserveConfig.getDebtCeiling() == 0);
-  }
 }

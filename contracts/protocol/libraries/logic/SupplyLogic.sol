@@ -28,7 +28,6 @@ library SupplyLogic {
   using PercentageMath for uint256;
 
   // See `IPool` for descriptions
-  event ReserveUsedAsCollateralEnabled(address indexed reserve, address indexed user);
   event ReserveUsedAsCollateralDisabled(address indexed reserve, address indexed user);
   event Withdraw(address indexed reserve, address indexed user, address indexed to, uint256 amount);
   event Supply(
@@ -74,17 +73,14 @@ library SupplyLogic {
     );
 
     if (isFirstSupply) {
-      if (
-        ValidationLogic.validateUseAsCollateral(
-          reservesData,
-          reservesList,
-          userConfig,
-          reserveCache.reserveConfiguration
-        )
-      ) {
-        userConfig.setUsingAsCollateral(reserve.id, true);
-        emit ReserveUsedAsCollateralEnabled(params.asset, params.onBehalfOf);
-      }
+      userConfig.enableUsingAsCollateral(
+        reservesData,
+        reservesList,
+        reserveCache.reserveConfiguration,
+        reserve.id,
+        params.asset,
+        params.onBehalfOf
+      );
     }
 
     emit Supply(params.asset, msg.sender, params.onBehalfOf, params.amount, params.referralCode);
@@ -210,18 +206,14 @@ library SupplyLogic {
       }
 
       if (params.balanceToBefore == 0) {
-        DataTypes.UserConfigurationMap storage toConfig = usersConfig[params.to];
-        if (
-          ValidationLogic.validateUseAsCollateral(
-            reservesData,
-            reservesList,
-            toConfig,
-            reserve.configuration
-          )
-        ) {
-          toConfig.setUsingAsCollateral(reserveId, true);
-          emit ReserveUsedAsCollateralEnabled(params.asset, params.to);
-        }
+        usersConfig[params.to].enableUsingAsCollateral(
+          reservesData,
+          reservesList,
+          reserve.configuration,
+          reserveId,
+          params.asset,
+          params.to
+        );
       }
     }
   }
@@ -264,12 +256,16 @@ library SupplyLogic {
 
     if (useAsCollateral) {
       require(
-        ValidationLogic.validateUseAsCollateral(reservesData, reservesList, userConfig, reserveCache.reserveConfiguration),
+        userConfig.enableUsingAsCollateral(
+          reservesData,
+          reservesList,
+          reserveCache.reserveConfiguration,
+          reserve.id,
+          asset,
+          msg.sender
+        ),
         Errors.USER_IN_ISOLATION_MODE
       );
-
-      userConfig.setUsingAsCollateral(reserve.id, true);
-      emit ReserveUsedAsCollateralEnabled(asset, msg.sender);
     } else {
       userConfig.setUsingAsCollateral(reserve.id, false);
       ValidationLogic.validateHFAndLtv(
