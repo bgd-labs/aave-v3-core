@@ -72,7 +72,6 @@ library UserConfiguration {
    * @param self The configuration object
    * @param reservesData The state of all the reserves
    * @param reservesList The addresses of all the active reserves
-   * @param reserveConfig The reserve configuration
    * @param reserveIndex The index of the reserve in the bitmap
    * @param asset The address of the reserve
    * @param user The address of the user
