@@ -4,6 +4,7 @@ pragma solidity 0.8.10;
 import {Errors} from '../helpers/Errors.sol';
 import {DataTypes} from '../types/DataTypes.sol';
 import {ReserveConfiguration} from './ReserveConfiguration.sol';
+import {DataTypes} from '../types/DataTypes.sol';
 
 /**
  * @title UserConfiguration library
@@ -12,11 +13,15 @@ import {ReserveConfiguration} from './ReserveConfiguration.sol';
  */
 library UserConfiguration {
   using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
+  using UserConfiguration for DataTypes.UserConfigurationMap;
 
   uint256 internal constant BORROWING_MASK =
     0x5555555555555555555555555555555555555555555555555555555555555555;
   uint256 internal constant COLLATERAL_MASK =
     0xAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA;
+
+  // See `IPool` for descriptions
+  event ReserveUsedAsCollateralEnabled(address indexed reserve, address indexed user);
 
   /**
    * @notice Sets if the user is borrowing the reserve identified by reserveIndex
@@ -60,6 +65,39 @@ library UserConfiguration {
         self.data &= ~bit;
       }
     }
+  }
+
+  /**
+   * @notice Activates usage as collateral for user
+   * @param self The configuration object
+   * @param reservesData The state of all the reserves
+   * @param reservesList The addresses of all the active reserves
+   * @param reserveIndex The index of the reserve in the bitmap
+   * @param asset The address of the reserve
+   * @param user The address of the user
+   * @return True if the asset was activated as collateral, false otherwise
+   **/
+  function enableUsingAsCollateral(
+    DataTypes.UserConfigurationMap storage self,
+    mapping(address => DataTypes.ReserveData) storage reservesData,
+    mapping(uint256 => address) storage reservesList,
+    DataTypes.ReserveConfigurationMap memory reserveConfiguration,
+    uint256 reserveIndex,
+    address asset,
+    address user
+  ) internal returns (bool) {
+    (bool isolationModeActive, , ) = self.getIsolationModeState(reservesData, reservesList);
+
+    if (
+      !isolationModeActive &&
+      reserveConfiguration.getDebtCeiling() == 0 &&
+      !self.isUsingAsCollateralAny()
+    ) {
+      self.setUsingAsCollateral(reserveIndex, true);
+      emit ReserveUsedAsCollateralEnabled(asset, user);
+      return true;
+    }
+    return false;
   }
 
   /**

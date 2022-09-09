@@ -34,7 +34,6 @@ library LiquidationLogic {
   using GPv2SafeERC20 for IERC20;
 
   // See `IPool` for descriptions
-  event ReserveUsedAsCollateralEnabled(address indexed reserve, address indexed user);
   event ReserveUsedAsCollateralDisabled(address indexed reserve, address indexed user);
   event LiquidationCall(
     address indexed collateralAsset,
@@ -285,18 +284,14 @@ library LiquidationLogic {
     );
 
     if (liquidatorPreviousATokenBalance == 0) {
-      DataTypes.UserConfigurationMap storage liquidatorConfig = usersConfig[msg.sender];
-      if (
-        ValidationLogic.validateUseAsCollateral(
-          reservesData,
-          reservesList,
-          liquidatorConfig,
-          collateralReserve.configuration
-        )
-      ) {
-        liquidatorConfig.setUsingAsCollateral(collateralReserve.id, true);
-        emit ReserveUsedAsCollateralEnabled(params.collateralAsset, msg.sender);
-      }
+      usersConfig[msg.sender].enableUsingAsCollateral(
+        reservesData,
+        reservesList,
+        collateralReserve.configuration,
+        collateralReserve.id,
+        params.collateralAsset,
+        msg.sender
+      );
     }
   }
 
