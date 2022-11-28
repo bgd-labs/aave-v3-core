@@ -132,6 +132,15 @@ interface IPoolAddressesProvider {
   function setAddressAsProxy(bytes32 id, address newImplementationAddress) external;
 
   /**
+   * @notice General function to update the admin currently managed by the PoolAddressesProvider.
+   * @dev IMPORTANT Use this function carefully, only for proxies that
+   * should not be managed by the pool addresses provider.
+   * @param proxyAddress The address of the proxy
+   * @param newAdmin The address of the new admin
+   */
+  function setProxyAdmin(address proxyAddress, address newAdmin) external;
+
+  /**
    * @notice Sets an address for an id replacing the address saved in the addresses map.
    * @dev IMPORTANT Use this function carefully, as it will do a hard replacement
    * @param id The id

@@ -144,6 +144,45 @@ makeSuite('PoolAddressesProvider', (testEnv: TestEnv) => {
     expect(implAddress).to.be.eq(mockConvertibleAddress);
   });
 
+  it('Alter a proxy admin', async () => {
+    const { addressesProvider, users } = testEnv;
+
+    const currentAddressesProviderOwner = users[1];
+    const oldOwner = users[2];
+    const newOwner = users[3];
+    // Deploy the periphery contract that will be registered in the PoolAddressesProvider
+    const proxy = await (
+      await new InitializableAdminUpgradeabilityProxy__factory(await getFirstSigner()).deploy()
+    ).deployed();
+
+    // Implementation
+    const impleV1 = await (
+      await new MockPeripheryContractV1__factory(await getFirstSigner()).deploy()
+    ).deployed();
+    await impleV1.initialize(oldOwner.address, 123);
+
+    // Initialize proxy
+    const incentivesInit = impleV1.interface.encodeFunctionData('initialize', [
+      oldOwner.address,
+      123,
+    ]);
+    await (
+      await proxy['initialize(address,address,bytes)'](
+        impleV1.address, // logic
+        addressesProvider.address, // admin
+        incentivesInit // data
+      )
+    ).wait();
+
+    // Alter admin
+    await addressesProvider
+      .connect(currentAddressesProviderOwner.signer)
+      .setProxyAdmin(proxy.address, newOwner.address);
+
+    const adminAddress = await getProxyAdmin(proxy.address);
+    expect(adminAddress).to.be.eq(newOwner.address);
+  });
+
   it('Unregister a proxy address', async () => {
     const { addressesProvider, users } = testEnv;
 
