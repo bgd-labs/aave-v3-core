@@ -4,6 +4,7 @@ pragma solidity 0.8.10;
 import {Ownable} from '../../dependencies/openzeppelin/contracts/Ownable.sol';
 import {IPoolAddressesProvider} from '../../interfaces/IPoolAddressesProvider.sol';
 import {InitializableImmutableAdminUpgradeabilityProxy} from '../libraries/aave-upgradeability/InitializableImmutableAdminUpgradeabilityProxy.sol';
+import {InitializableAdminUpgradeabilityProxy} from '../../dependencies/openzeppelin/upgradeability/InitializableAdminUpgradeabilityProxy.sol';
 
 /**
  * @title PoolAddressesProvider
@@ -69,6 +70,11 @@ contract PoolAddressesProvider is Ownable, IPoolAddressesProvider {
     address oldImplementationAddress = _getProxyImplementation(id);
     _updateImpl(id, newImplementationAddress);
     emit AddressSetAsProxy(id, proxyAddress, oldImplementationAddress, newImplementationAddress);
+  }
+
+  /// @inheritdoc IPoolAddressesProvider
+  function setProxyAdmin(address proxyAddress, address newAdmin) external override onlyOwner {
+    InitializableAdminUpgradeabilityProxy(payable(proxyAddress)).changeAdmin(newAdmin);
   }
 
   /// @inheritdoc IPoolAddressesProvider
